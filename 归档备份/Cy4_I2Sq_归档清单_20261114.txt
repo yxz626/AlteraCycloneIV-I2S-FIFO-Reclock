@@ -1,0 +1,119 @@
+==============================================================================
+Cy4_I2Sq 工程成果归档清单
+==============================================================================
+归档时间   : 2026-11-14 21:23:34
+工程根目录 : e:\CPLD\quartus_project\Cy4_I2S(qq)
+归档文件   : Cy4_I2Sq_archive_20261114.zip
+器件/板卡  : EP4CE6F17C8 核心板 + W9825G6JH SDRAM + EPCS4 配置芯片
+功能       : I2S / DoP / native-DSD FIFO reclock（自适应位深与采样率、双时钟选择、
+             LED / K3 / AD1862、DSDOE + F0~F3 采样率指示、DoP 解码成原生 DSD）
+前一归档   : Cy4_I2Sq_archive_20261107.zip（本次不覆盖，保留为历史版本）
+
+------------------------------------------------------------------------------
+一、归档时的验证状态（摘自带档报告、仿真日志与归档前实测）
+------------------------------------------------------------------------------
+Quartus 17.1 全编译 : 0 errors / 0 warnings；Flow Status = Successful - Sat Nov 14 19:44:42 2026
+TimeQuest           : 最紧 setup +0.709 ns、hold +0.132 ns，三个工艺角全部为正
+                      Unconstrained 六项计数全部为 0
+资源                : LE 3,437/6,272 (55%)；存储位 51,200/276,480 (19%)；引脚 62/180
+功能仿真           : RESULT: ALL CHECKS PASSED (0 errors)
+                      DOP CASE 176.4k->DSD64  3849 bit 0 错
+                      DOP CASE 352.8k->DSD128 3872 bit 0 错
+                      DOP CASE 192k->DSD64(48k族) 3848 bit 0 错
+引脚核对           : 归档前实测 62/62 全部一致，RESULT: ALL PIN CHECKS PASSED
+                      （可复跑：python sim/check_pins.py）
+编程文件           : Cy4_I2Sq.jic，524510 字节（EPCS4 / ASx1）
+                      output_files/Cy4_I2Sq.sof，358711 字节
+时序一致性         : Cy4_I2S_reclock.v(11/14 19:21) < SOF(19:44) < JIC(19:45)，固件含最新 RTL
+
+关键参数（output_files/Cy4_I2Sq.map.rpt 实测）:
+  P_SLIP_GAP     = 1000000000          (512)      水位 slip 按帧计冷却
+  P_LRCK_GAP     = 0000100000000000    (2048)     41.7 us 断流判据
+  P_LOST_CONFIRM = 1001011000000000000000 (2457600) 50 ms 断流持续确认
+  P_CHG_CONFIRM  = 100                 (4)        速率/格式变化按有效测量次数确认
+  P_DSD_EN       = 1
+  P_DOP_EN       = 1                              DoP 自动识别与解码
+  P_DOP_CONFIRM  = 100000               (32)      连续 32 帧 marker 确认
+  P_DOP_MISS     = 100                  (4)       连续 4 帧 marker 缺失退出
+
+本版相对 20261107 归档的主要变更（均已包含在源码与文档中）:
+  · 新增 DSDOE / F0~F3 采样率指示（F2/C2/A2/A3/A4），按 f0~F3.txt 编码
+  · 新增 DoP v1.1 自动识别与解码，复用同一 SDRAM FIFO reclock 输出原生 DSD
+  · 断流持续确认 P_LOST_CONFIRM：短断流由缓冲吸收，不触发不可取消的完整重锁
+  · 速率/格式变化按有效测量次数确认 P_CHG_CONFIRM，根除瞬时档位偏离造成的随机停顿
+  · DSD 自动识别误判防护：32bit/352.8k 的 BCLK 命中 DSD512 档不再被误判为 DSD
+  · 分级淡变：水位 slip 用 8 帧快速淡变，速率/格式/模式切换仍用 33 帧完整淡变
+  · LED 改由常开 clk_49m 域驱动，core 时钟停摆时仍可诊断
+  · 用户板级确认：32bit/352.8k 播放与切歌均已正常
+
+------------------------------------------------------------------------------
+二、复现命令
+------------------------------------------------------------------------------
+全编译     : quartus_sh --flow compile Cy4_I2Sq
+生成 JIC   : quartus_cpf -c -d EPCS4 -s EP4CE6 -m ASx1 output_files/Cy4_I2Sq.sof Cy4_I2Sq.jic
+功能仿真   : iverilog -g2005 -o sim/tb.vvp -s tb sim/altclkctrl_sim.v
+             sim/sdram_model.v sim/tb_Cy4_I2S_reclock.v Cy4_I2S_reclock.v && vvp sim/tb.vvp
+引脚核对   : python sim/check_pins.py
+烧录       : Quartus Programmer 加载 Cy4_I2Sq.jic，经 JTAG/SFL 写入 EPCS4，断电重启
+
+------------------------------------------------------------------------------
+三、文件清单（相对路径 | 字节 | SHA256）
+------------------------------------------------------------------------------
+Cy4_I2S_reclock.v                                                  98107  347fbc8716fd3af6148330b8f7b59bf3c01cbcb88b7f4ab0a8c7721ea98161bb
+Cy4_I2Sq.jic                                                      524510  6808506acad3fff958804df844b52ba4fb42bc73ba0ab2caed28eccc3ca28d46
+Cy4_I2Sq.qpf                                                        1301  6121cf83fe4027bb283ad02a4aef881e4521d548abb6685c7581a758249b149d
+Cy4_I2Sq.qsf                                                       14063  d10ec0702cc18758a247d55e6f97e9963b58836ff6ef075eb86a8e762df98d07
+Cy4_I2Sq.sdc                                                        6347  9e58f3c673e614ffb8b51dd486a929049df2c7cbe03d06186fbba28703a4e4b9
+f0~F3.txt                                                            800  eddc6508d1095e56a22346b7549abcd899b16efb9892dbaa3a6f17d4a52d2176
+工程概述.md                                                           103581  195c43889fdb102629d14756ce1166944e77371c46c053083c8199812eef0cbd
+工程要求说明.txt                                                          3288  82e5d73539a602da844eeff701930694ae14e4855ee29fb08769cced58ad7df0
+验证报告.md                                                            78090  3c6e80998730db5ec851167841cf30ae09a83da257fdfc62533a51d2eee2d062
+EP4CE6F17C8核心板资料和datasheet/AD1862.pdf                             187584  46c4498fba51630914588f8ebcabfaaa32b5ffffb088fb64e12614657ae4479a
+EP4CE6F17C8核心板资料和datasheet/Cyclone IV EP4CE10引脚信息.pdf             135134  2422d272b66b9d64adf4687cc80566cd6b0ef27eabf3dc7763f6ceb7ec47e80e
+EP4CE6F17C8核心板资料和datasheet/Cyclone IV手册.pdf                      7011443  87962332c2b5073760cd9d6634aadab3bdda6abeaf33537e510723e8a85bc67a
+EP4CE6F17C8核心板资料和datasheet/EP4CE6F17C8原理图.png                    2326215  8cc508c6bebea4ad83d9e6e59a41fc700766bb1aaf2d694b89d59bfd5c02913d
+EP4CE6F17C8核心板资料和datasheet/EP4CE6F17C8核心板IO引脚分配表.xlsx              12180  0b30097b1a0d7252ce37590a404e10ea83890d94c9b69b702a444b1e27c7ded3
+EP4CE6F17C8核心板资料和datasheet/EP4CE6F17C8核心板引脚定义对比结果.xlsx            367522  b2b6d36f1d65f1dd1775e4de5f8337b2c9ebb613edd473111541b79f8fe75594
+EP4CE6F17C8核心板资料和datasheet/Winbond W9825G6JH.PDF                  823075  b97a8039e144cf6ea40a8bc30033fbf0486417fe86691cc034c0f043f6a13a99
+EP4CE6F17C8核心板资料和datasheet/核心板pcb图（正面）.png                        324908  5a3b9856ec2fa08dacde62646e562a7539b0531b130f9d3b3d90b3e6126ef96c
+EP4CE6F17C8核心板资料和datasheet/核心板pcb图（背面）.png                        124500  c5bf095f7df4731b093fa462ac6ec4468f7f64332efbd4b0dfeb9b31ca1e5bd8
+output_files/Cy4_I2Sq.asm.rpt                                       4128  37888c2894fa6897adf95832ed9098ce65bb591273a23ac3642ec7d8e0f593a1
+output_files/Cy4_I2Sq.cdf                                            364  9e2c5d87164d842d86389b1d679f93e42a8bee98f8ad2887c88f21b7597461f9
+output_files/Cy4_I2Sq.done                                            26  1ef94035a6dbc586480ba1f5b929cc134b8bd642a347ad5de22a53985a0e8b1d
+output_files/Cy4_I2Sq.fit.rpt                                     373406  dfa8b83f7a4f01ab172ef36dc6c550b2741c4e3f8278e50ab3c94f5ae91fd83d
+output_files/Cy4_I2Sq.fit.smsg                                       567  c0912ab1f7cbc022d0a3ad232bd95c0496d9989d4f28102a742f1c7ec1672c2d
+output_files/Cy4_I2Sq.fit.summary                                    629  7b052c557167faf589d579f919207f11f778d236b945d12244c8650e3cd8e52a
+output_files/Cy4_I2Sq.flow.rpt                                      8470  42c63c4e2d91288c13d3d0dfc702f92e8f5b7317029535592c24d2c5b281a07e
+output_files/Cy4_I2Sq.jdi                                            226  f0e212bc4b7011e91ff955c213b3768e77bed46e2b7252357908d20c8decca7f
+output_files/Cy4_I2Sq.map.rpt                                     163462  0d70a30a97c434bd9b4be23a56e891cd769eb18c25615ee79f1308a9ef76dff1
+output_files/Cy4_I2Sq.map.smsg                                       163  0f63cdf547c7bcaa26b0ce8880542acea5400d8fface481280abbabbd9b56722
+output_files/Cy4_I2Sq.map.summary                                    487  f17e0f49aee60ffaa6af09db0618943a98e684fc86765fd2e49657fe0cd776c8
+output_files/Cy4_I2Sq.pin                                          33255  1918a583399545950d6d070634d85ccdd7738e3f17c876c731fe69e2e7a33c4a
+output_files/Cy4_I2Sq.sld                                             21  c7de3cc5544a1144192d6825eb69cf5e065bf99f16fb9acb42fadd23adede991
+output_files/Cy4_I2Sq.sof                                         358711  2866910837f3cda48331bb235f0d35a3bff4c8ca415cfbb40a848fe801dc7ec2
+output_files/Cy4_I2Sq.sta.rpt                                     597106  275eb9880d68feac0f5f3d0a56990a13c6d8edad0c2c93c9bd5dcd0b3f9a6e4f
+output_files/Cy4_I2Sq.sta.summary                                   3423  c6a419e83c5c11779bc761454ed14bfd03427345c08b7ea4ccdba3f2138a67d4
+output_files/output_file.cof                                        1089  622460b8ac60e84b1937166a8ac03434e6f53b81754f60d07c421c5740413c92
+sim/altclkctrl_sim.v                                                 583  f138f2768c721f87ef47aca4bcc925f8546e27ae36a32036e47933438fbe7544
+sim/check_pins.py                                                   2189  f4909a4f0285d5d87d180bd6a5b476159584153133f9392073b044187e905311
+sim/sdram_model.v                                                   4050  820045a833b5b6bbe06e4aaafbb2361993fe6d10768ee91348c1638b71bf6734
+sim/sim_log.txt                                                    17360  0708e62eee11e3d002071ab5e188b71ebda3c460a099c201b8958c70d4c49373
+sim/tb_Cy4_I2S_reclock.v                                           72623  ffefbb3185ba9f0e501f0e49ae5f14a5735eba3a5d3686bb7b5b20a95f8bf9c1
+
+共 40 个文件，原始总大小 13784986 字节（13.15 MB）
+（zip 内另含 MANIFEST.txt，即本清单的副本）
+
+------------------------------------------------------------------------------
+四、未纳入归档的内容及原因
+------------------------------------------------------------------------------
+  · db/、incremental_db/：Quartus 中间数据库，可由全编译重建
+  · 归档备份/：归档产物自身（含 20261107 历史归档），避免递归包含
+  · cr_ie_info.json、Cy4_I2Sq.qws：IDE 会话/窗口状态，非工程成果
+  · output_file.jic、output_file.map：早期转换试验残留，正式交付物为 Cy4_I2Sq.jic
+  · 仿真可执行文件（*.vvp）、__pycache__：运行中间产物
+  · .codebuddy/：IDE 项目数据，保持原样不纳入归档
+
+说明：db/ 与 incremental_db/ 可由全编译完整重建，缺失不影响工程打开与编译；
+      原始资料目录已完整纳入，可据此复核引脚分配与 AD1862 时序依据；
+      解压后顶层目录为 Cy4_I2Sq/，可直接作为 Quartus 工程打开。
+==============================================================================

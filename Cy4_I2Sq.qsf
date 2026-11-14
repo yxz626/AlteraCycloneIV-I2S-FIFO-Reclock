@@ -1,0 +1,249 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 2017  Intel Corporation. All rights reserved.
+# Your use of Intel Corporation's design tools, logic functions 
+# and other software and tools, and its AMPP partner logic 
+# functions, and any output files from any of the foregoing 
+# (including device programming or simulation files), and any 
+# associated documentation or information are expressly subject 
+# to the terms and conditions of the Intel Program License 
+# Subscription Agreement, the Intel Quartus Prime License Agreement,
+# the Intel FPGA IP License Agreement, or other applicable license
+# agreement, including, without limitation, that your use is for
+# the sole purpose of programming logic devices manufactured by
+# Intel and sold by Intel or its authorized distributors.  Please
+# refer to the applicable agreement for further details.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus Prime
+# 版本 17.1.0 Build 590 10/25/2017 SJ Standard Edition
+# 创建时间 = 20:28:12  2026 年 11 月 4 日
+#
+# -------------------------------------------------------------------------- #
+#
+# 说明：
+#
+# 1) 赋值默认值存放在文件：
+#		Cy4_I2Sq_assignment_defaults.qdf
+#    若该文件不存在，请查阅：
+#		assignment_defaults.qdf
+#
+# 2) Altera 建议不要手工修改本文件。
+#    本文件由 Quartus Prime 软件自动更新，
+#    手工改动可能被丢失或覆盖。
+#
+# -------------------------------------------------------------------------- #
+
+
+set_global_assignment -name FAMILY "Cyclone IV E"
+set_global_assignment -name DEVICE EP4CE6F17C8
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 17.1.0
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:28:12  NOVEMBER 04, 2026"
+set_global_assignment -name LAST_QUARTUS_VERSION "17.1.0 Standard Edition"
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
+set_global_assignment -name NOMINAL_CORE_SUPPLY_VOLTAGE 1.2V
+
+# -------------------------------------------------------------------------- #
+# Cy4_I2Sq：Hi-end I2S FIFO reclock 工程
+# -------------------------------------------------------------------------- #
+set_global_assignment -name VERILOG_FILE Cy4_I2S_reclock.v
+set_global_assignment -name SDC_FILE Cy4_I2Sq.sdc
+set_global_assignment -name TOP_LEVEL_ENTITY Cy4_I2Sq
+# ===== 输出 I2S 格式（AK4493 匹配用，改完需重新全编译 + 重新生成 JIC）=====
+# P_I2S_DELAY : 1 = 标准 Philips I2S（1 BCLK 延迟，AK4493 Mode 3/7）
+#               0 = 左对齐 / MSB justified（AK4493 Mode 2/6）
+# P_LRCK_POL  : 0 = LRCK 低为左（AK4493 I2S 模式 L/H）
+#               1 = LRCK 高为左（AK4493 justified 模式 H/L，含默认 Mode 6）
+# P_SWAP_LR   : 1 = 交换左右声道（DAC 声道定义或板级 L/R 接线相反时）
+#
+# 预设 A（AK4493 配成 Mode 3 / Mode 7，24/32-bit I2S）：1 / 0 / 0  ← 当前
+# 预设 B（AK4493 保持默认 Mode 6，32-bit MSB justified）：0 / 1 / 0
+# 预设 C（预设 A 但左右反了）：1 / 0 / 1
+set_parameter -name P_I2S_DELAY 1
+set_parameter -name P_LRCK_POL 0
+set_parameter -name P_SWAP_LR 0
+# P_I2S_LEGACY : 0（默认）= 完整 Hi-end 处理：I2S 增益淡入淡出、slip/切换在静音帧提交；
+#                1 = 纯位精确直通旁路，仅作板级调试对照（会关闭优化①③ 的 I2S 效果）。
+# P_CH_TEST    : 1 = 左声道正常、右声道强制静音，用于判断单声道来自 FPGA 还是 DAC/后级。
+#                0（默认）= 正常立体声。诊断完必须改回 0 重新编译烧录。
+set_parameter -name P_I2S_LEGACY 0
+set_parameter -name P_CH_TEST 0
+# ===== native DSD 支持 =====
+# P_DSD_EN    : 1 = 自动识别 I2S/PCM 与 native DSD，并对 DSD 做 FIFO reclock + 原生输出；
+#               0 = 完全退回纯 I2S 行为。
+# P_DSD_BLINK : 1 = DSD 模式下档位 LED 慢闪（与同档 PCM 区分）；0 = 常亮。
+# 引脚复用（不改板级接线）：输入 BCLK/LRCK/SDATA = DCLK/DSD_L/DSD_R，
+# 输出 BCLK/LRCK/SDATA/MCLK = DCLK/DSD_L/DSD_R/MCLK。
+set_parameter -name P_DSD_EN 1
+set_parameter -name P_DSD_BLINK 1
+# 断流判定阈值 P_LRCK_GAP 使用 RTL 默认值 2048（41.7 us）。
+# 越过该阈值的短断流不再立即重锁：由 P_LOST_CONFIRM（50 ms 持续确认）
+# 与 SDRAM 缓冲吸收，只有持续断流才按切歌重锁。详见《工程概述.md》第 20 节。
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
+# F16 是 nCEO 复用引脚；本板将其接至 SDRAM_CKE。
+set_global_assignment -name RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
+
+# 1) 两路纯净主时钟（K1/K2 已拆除，用杜邦线接入）
+set_location_assignment PIN_E15 -to clk_45m
+set_location_assignment PIN_E16 -to clk_49m
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk_45m
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to clk_49m
+
+# 2) I2S 输入
+set_location_assignment PIN_L4 -to i2s_bclk_i
+set_location_assignment PIN_P1 -to i2s_lrck_i
+set_location_assignment PIN_N1 -to i2s_sdata_i
+set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to i2s_bclk_i
+
+# 3) reclock 后的 I2S 输出（BANK4）
+set_location_assignment PIN_T9 -to i2s_mclk_o
+set_location_assignment PIN_T10 -to i2s_bclk_o
+set_location_assignment PIN_T11 -to i2s_lrck_o
+set_location_assignment PIN_T12 -to i2s_sdata_o
+
+# 4) AD1862 输出接口（模式 1）
+set_location_assignment PIN_N9 -to do_l
+set_location_assignment PIN_N11 -to do_r
+set_location_assignment PIN_R9 -to ad_bclk
+set_location_assignment PIN_T13 -to ad_le
+
+# 5) LED 状态指示（高有效）
+set_location_assignment PIN_R13 -to led[0]
+set_location_assignment PIN_T14 -to led[1]
+set_location_assignment PIN_R14 -to led[2]
+set_location_assignment PIN_T15 -to led[3]
+
+# 6) K3 按键（低有效）
+set_location_assignment PIN_N15 -to key_k3
+
+# 6b) DSD 格式指示（Sample Rate Indicators，编码见工程根目录 f0~F3.txt）
+# dsd_on = DSDOE：FPGA 输出 native DSD 码流时输出高电平。
+# fsel[3:0] 的 F0/F1/F2/F3 按 C2/A2/A3/A4 依次分配。
+# 注意：物理 PIN_F2 是 dsd_on，而信号 F2（fsel[2]）在 PIN_A3，
+#       两者名字相同但为不同引脚，勿混淆。
+set_location_assignment PIN_F2 -to dsd_on
+set_location_assignment PIN_C2 -to fsel[0]
+set_location_assignment PIN_A2 -to fsel[1]
+set_location_assignment PIN_A3 -to fsel[2]
+set_location_assignment PIN_A4 -to fsel[3]
+
+# 7) W9825G6JH SDRAM（按 EP4CE6F17C8 IO 引脚分配表）
+set_location_assignment PIN_B14 -to sdram_clk
+set_location_assignment PIN_F16 -to sdram_cke
+set_location_assignment PIN_K10 -to sdram_cs_n
+set_location_assignment PIN_K11 -to sdram_ras_n
+set_location_assignment PIN_J12 -to sdram_cas_n
+set_location_assignment PIN_J13 -to sdram_we_n
+set_location_assignment PIN_F13 -to sdram_ba[1]
+set_location_assignment PIN_G11 -to sdram_ba[0]
+set_location_assignment PIN_F15 -to sdram_addr[12]
+set_location_assignment PIN_D16 -to sdram_addr[11]
+set_location_assignment PIN_F14 -to sdram_addr[10]
+set_location_assignment PIN_D15 -to sdram_addr[9]
+set_location_assignment PIN_C16 -to sdram_addr[8]
+set_location_assignment PIN_C15 -to sdram_addr[7]
+set_location_assignment PIN_B16 -to sdram_addr[6]
+set_location_assignment PIN_A15 -to sdram_addr[5]
+set_location_assignment PIN_A14 -to sdram_addr[4]
+set_location_assignment PIN_C14 -to sdram_addr[3]
+set_location_assignment PIN_D14 -to sdram_addr[2]
+set_location_assignment PIN_E11 -to sdram_addr[1]
+set_location_assignment PIN_F11 -to sdram_addr[0]
+set_location_assignment PIN_L15 -to sdram_data[15]
+set_location_assignment PIN_L16 -to sdram_data[14]
+set_location_assignment PIN_K15 -to sdram_data[13]
+set_location_assignment PIN_K16 -to sdram_data[12]
+set_location_assignment PIN_J15 -to sdram_data[11]
+set_location_assignment PIN_J16 -to sdram_data[10]
+set_location_assignment PIN_J11 -to sdram_data[9]
+set_location_assignment PIN_G16 -to sdram_data[8]
+set_location_assignment PIN_K12 -to sdram_data[7]
+set_location_assignment PIN_L11 -to sdram_data[6]
+set_location_assignment PIN_L14 -to sdram_data[5]
+set_location_assignment PIN_L13 -to sdram_data[4]
+set_location_assignment PIN_L12 -to sdram_data[3]
+set_location_assignment PIN_N14 -to sdram_data[2]
+set_location_assignment PIN_M12 -to sdram_data[1]
+set_location_assignment PIN_P14 -to sdram_data[0]
+set_location_assignment PIN_G15 -to sdram_dqm[1]
+set_location_assignment PIN_J14 -to sdram_dqm[0]
+
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
+
+# Hi-end 输出 IO：对全部引脚显式指定电平标准与驱动强度。
+# （Cyclone IV E 不支持 SLOW_SLEW_RATE，已移除该赋值。）
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to *
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to i2s_mclk_o
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to i2s_bclk_o
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to i2s_lrck_o
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to i2s_sdata_o
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to do_l
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to do_r
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to ad_bclk
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to ad_le
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to led[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to dsd_on
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to fsel[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to fsel[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to fsel[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to fsel[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_clk
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_cke
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_cs_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_ras_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_cas_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_we_n
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_ba[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_ba[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_addr[12]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_addr[11]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_addr[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_addr[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_addr[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_addr[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_addr[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_addr[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_addr[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_addr[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_addr[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_addr[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_addr[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[15]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[14]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[13]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[12]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[11]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_data[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_dqm[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to sdram_dqm[0]
+set_global_assignment -name NUM_PARALLEL_PROCESSORS 4
+# Quartus 关于推断 RAM 与 3.3-V LVTTL 接口的固有提示。
+# 二者在本工程中均无害：满/空逻辑避免同址
+# 读期间写（仿真已位精确验证），且核心板本身
+# 即为 3.3 V 设计（硬件满足 AN 447 要求）。
+set_global_assignment -name MESSAGE_DISABLE 276020
+set_global_assignment -name MESSAGE_DISABLE 276027
+set_global_assignment -name MESSAGE_DISABLE 169177
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

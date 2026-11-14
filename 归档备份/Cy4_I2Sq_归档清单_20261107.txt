@@ -1,0 +1,103 @@
+==============================================================================
+Cy4_I2Sq 工程成果归档清单
+==============================================================================
+归档时间   : 2026-11-07 16:02:19
+工程根目录 : e:\CPLD\quartus_project\Cy4_I2S(qq)
+归档文件   : Cy4_I2Sq_archive_20261107.zip
+器件/板卡  : EP4CE6F17C8 核心板 + W9825G6JH SDRAM + EPCS4 配置芯片
+功能       : I2S FIFO reclock（自适应位深/采样率、双时钟选择、LED/K3/AD1862）
+
+------------------------------------------------------------------------------
+一、归档时的验证状态（摘自工程报告、仿真日志与归档前实测）
+------------------------------------------------------------------------------
+Quartus 17.1 全编译 : 0 errors / 0 warnings；Flow Status = Successful - Sat Nov 07 14:00:51 2026
+TimeQuest           : 最紧 slack 0.364 ns（setup/hold 汇总，三工艺角全正）
+                      Illegal Clocks                  ; 0     ; 0
+                      Unconstrained Clocks            ; 0     ; 0
+                      Unconstrained Input Ports       ; 0     ; 0
+                      Unconstrained Input Port Paths  ; 0     ; 0
+                      Unconstrained Output Ports      ; 0     ; 0
+                      Unconstrained Output Port Paths ; 0     ; 0
+功能仿真           : RESULT: ALL CHECKS PASSED (0 errors)
+                      STEREO: non-zero frames=4566 mono-looking frames=0 (TB_DELAY=1)
+                      SDRAM DQM: masked-during-read events=0
+                      SLIP: acks=11 fade_min=0 fade_step_err=0 fill=488
+                      AD1862: frames_checked=210 le_pulses=233 ad_err=0 (period=0 setup=0 high=0 hold=0 le=0 data=0) dither_seen=142 fade_min=0 fade_step_err=0
+引脚核对           : 归档前实测 57/57 全部一致，RESULT: ALL PIN CHECKS PASSED
+                      （可复跑：python sim/check_pins.py）
+编程文件           : Cy4_I2Sq.jic，524510 字节，EPCS4 标识=True
+
+关键修复记录（均已包含在源码中）:
+  · SDRAM DQM 在整个 READ CAS 延迟窗口保持为 0，避免 DQ 高阻导致读回失效
+    （曾造成输出单声道且偏暗；行为模型已实现 DQM 屏蔽并有防回归断言）
+  · 输入流丢失检测 + 自动重同步，手动切歌无需断电重启
+  · Hi-end ①~④ 全部生效：水位 faded slip / TPDF dither / 淡入淡出 / 全 IO 时序签核
+  · 标准 Philips I2S 输出（P_I2S_DELAY=1），QSF 中五个参数可配置
+
+------------------------------------------------------------------------------
+二、复现命令
+------------------------------------------------------------------------------
+全编译     : quartus_sh --flow compile Cy4_I2Sq
+生成 JIC   : quartus_cpf -c -d EPCS4 -s EP4CE6 -m ASx1 output_files/Cy4_I2Sq.sof Cy4_I2Sq.jic
+功能仿真   : iverilog -g2005 -o sim/tb.vvp -s tb sim/altclkctrl_sim.v 
+             sim/sdram_model.v sim/tb_Cy4_I2S_reclock.v Cy4_I2S_reclock.v && vvp sim/tb.vvp
+引脚核对   : python sim/check_pins.py
+烧录       : Quartus Programmer 加载 Cy4_I2Sq.jic，经 JTAG/SFL 写入 EPCS4，断电重启
+
+------------------------------------------------------------------------------
+三、文件清单（相对路径 | 字节 | SHA256）
+------------------------------------------------------------------------------
+Cy4_I2S_reclock.v                                               54591  1fb8b005de98b9bf45d9871d5c65587858b52d76e88e27d0510185a08ba37d80
+Cy4_I2Sq.jic                                                   524510  39e0638d4e2785f68adeb0a34cb5f70e340d7a283e18758eea1d9bcf7406934a
+Cy4_I2Sq.qpf                                                     1301  6121cf83fe4027bb283ad02a4aef881e4521d548abb6685c7581a758249b149d
+Cy4_I2Sq.qsf                                                    12371  81bd37405e82a9e655a455a8318d16681f74e5b7af1f776859d77c4cce008801
+Cy4_I2Sq.sdc                                                     5433  fbcae6d20ec669d182948a0604d83d45869572841caf96f26b55aa37cff07f65
+EP4CE6F17C8核心板资料和datasheet/AD1862.pdf                          187584  46c4498fba51630914588f8ebcabfaaa32b5ffffb088fb64e12614657ae4479a
+EP4CE6F17C8核心板资料和datasheet/Cyclone IV EP4CE10引脚信息.pdf          135134  2422d272b66b9d64adf4687cc80566cd6b0ef27eabf3dc7763f6ceb7ec47e80e
+EP4CE6F17C8核心板资料和datasheet/Cyclone IV手册.pdf                   7011443  87962332c2b5073760cd9d6634aadab3bdda6abeaf33537e510723e8a85bc67a
+EP4CE6F17C8核心板资料和datasheet/EP4CE6F17C8原理图.png                 2326215  8cc508c6bebea4ad83d9e6e59a41fc700766bb1aaf2d694b89d59bfd5c02913d
+EP4CE6F17C8核心板资料和datasheet/EP4CE6F17C8核心板IO引脚分配表.xlsx           12180  0b30097b1a0d7252ce37590a404e10ea83890d94c9b69b702a444b1e27c7ded3
+EP4CE6F17C8核心板资料和datasheet/EP4CE6F17C8核心板引脚定义对比结果.xlsx         367522  b2b6d36f1d65f1dd1775e4de5f8337b2c9ebb613edd473111541b79f8fe75594
+EP4CE6F17C8核心板资料和datasheet/Winbond W9825G6JH.PDF               823075  b97a8039e144cf6ea40a8bc30033fbf0486417fe86691cc034c0f043f6a13a99
+EP4CE6F17C8核心板资料和datasheet/核心板pcb图（正面）.png                     324908  5a3b9856ec2fa08dacde62646e562a7539b0531b130f9d3b3d90b3e6126ef96c
+EP4CE6F17C8核心板资料和datasheet/核心板pcb图（背面）.png                     124500  c5bf095f7df4731b093fa462ac6ec4468f7f64332efbd4b0dfeb9b31ca1e5bd8
+output_files/Cy4_I2Sq.asm.rpt                                    4128  dd72aefe59b52c4a758824b14b72eb2ce770d4ce75f81e91d6b12e5813fec85c
+output_files/Cy4_I2Sq.cdf                                         364  9e2c5d87164d842d86389b1d679f93e42a8bee98f8ad2887c88f21b7597461f9
+output_files/Cy4_I2Sq.done                                         26  80d44cc5cbebaf3a0f3ea47782eb9e2ab81e353d0d0007854f6132a65b46f401
+output_files/Cy4_I2Sq.fit.rpt                                  325977  cd445b531f7c97a77d90d1a4481483ba76f6723875f87f3e67f8cfff50a9411b
+output_files/Cy4_I2Sq.fit.smsg                                    567  c0912ab1f7cbc022d0a3ad232bd95c0496d9989d4f28102a742f1c7ec1672c2d
+output_files/Cy4_I2Sq.fit.summary                                 629  cd509814727970c371c94afd474dfdc45ce245b82f9a3e46bb6b5f73a842a779
+output_files/Cy4_I2Sq.flow.rpt                                   8470  560f8e21598c84aee533285632cbf9f0b8486aace6494de490d6fb3b001bdd5c
+output_files/Cy4_I2Sq.jdi                                         226  f0e212bc4b7011e91ff955c213b3768e77bed46e2b7252357908d20c8decca7f
+output_files/Cy4_I2Sq.map.rpt                                  128381  2ee669b61cff016685e8187486b76603afff6a191f08d2ca602ae28fa1d927c5
+output_files/Cy4_I2Sq.map.smsg                                    161  238d55b239c4dbaeb0b6f38ecc41502d32832d272972bb833f69792b75a894e1
+output_files/Cy4_I2Sq.map.summary                                 487  94f7f182e2485bc0d630f522a2e7c609eb5afa7959c74004ce2dff8b4b48cad5
+output_files/Cy4_I2Sq.pin                                       33270  e7fb01a1ab19f83bc17f0d544e0aeeebdcafb7b391726f011fcf1ab96eff4519
+output_files/Cy4_I2Sq.sld                                          21  c7de3cc5544a1144192d6825eb69cf5e065bf99f16fb9acb42fadd23adede991
+output_files/Cy4_I2Sq.sof                                      358711  2ea5fcb088463505e086e6e5c2646684c28b70e39afbe924b00d14988c078e23
+output_files/Cy4_I2Sq.sta.rpt                                  574482  c743b8b9b3d5853d0503964bcb812d6bad8a4b31ff5e64056a8872541d863577
+output_files/Cy4_I2Sq.sta.summary                                3423  9f82e1871354f99aaeb8958f773301e0a80609fb34789da330bfbcf3872d9452
+output_files/output_file.cof                                     1089  622460b8ac60e84b1937166a8ac03434e6f53b81754f60d07c421c5740413c92
+sim/altclkctrl_sim.v                                              583  f138f2768c721f87ef47aca4bcc925f8546e27ae36a32036e47933438fbe7544
+sim/check_pins.py                                                1848  686e984847071ad294b81ac82cfba74e21c8125795fa3539f0d3d894e20f97ef
+sim/sdram_model.v                                                3952  43a4c79e0393fafc9b74e38845f5376a10d33f8d796bab2951627c9aed525053
+sim/sim_log.txt                                                  3653  bbc3b5f6a91c156dc9c5c83df2c12c10e987bf2278d57b2c884b427218f91f7c
+sim/tb_Cy4_I2S_reclock.v                                        26882  7219c9a10e6b74b5594968ac723224d9ca9248af477bb5f53596058210b73b7e
+工程概述.md                                                         23485  842d8c712057c647c7eeb983538d740406ed28341b6e33e4790044bb23b7d75b
+工程要求说明.txt                                                       3288  82e5d73539a602da844eeff701930694ae14e4855ee29fb08769cced58ad7df0
+验证报告.md                                                         21121  aa5dd9f523594220c016526626ddca00551a8c0e26683bb660f698ed5e1ec6f7
+
+共 39 个文件，原始总大小 13435991 字节（12.81 MB）
+
+------------------------------------------------------------------------------
+四、未纳入归档的内容及原因
+------------------------------------------------------------------------------
+  · db/、incremental_db/：Quartus 中间数据库，可由全编译重建（约 7.9 MB）
+  · Cy4_I2Sq.qws、cr_ie_info.json：IDE 窗口/会话状态，非工程成果
+  · output_file.jic、output_file.map：早期转换试验残留，正式交付物为 Cy4_I2Sq.jic
+  · 仿真可执行文件（*.vvp）、__pycache__：运行中间产物
+  · .codebuddy/：IDE 项目数据，保持原样不纳入归档
+
+说明：db/ 与 incremental_db/ 可由全编译完整重建，缺失不影响工程打开与编译；
+      原始资料目录已完整纳入，可据此复核引脚分配与 AD1862 时序依据。
+==============================================================================
