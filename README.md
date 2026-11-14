@@ -1,6 +1,6 @@
-# Cy4_I2Sq — I2S / DoP / 原生 DSD FIFO 重时钟
+#基于Altera Cyclone IV （EP4CE6F17C8）的 I2S / DoP / 原生 DSD FIFO 重时钟
 
-> 语言 / Language：**简体中文** ｜ [English](README.en.md)
+
 
 面向 **EP4CE6F17C8** 核心板（Cyclone IV E，配 **W9825G6JH** SDRAM 与 **EPCS4**
 配置芯片，[详见淘宝关键字](https://item.taobao.com/item.htm?id=821637015352&mi_id=0000BXvZk1LRflSx63xT5gNr_1dwjKwPkOyyFr-JYrqp6P0&spm=tbpc.mytb_itemcollect.item.goods&upStreamPrice=2000)的开源 FPGA 重时钟设计。它接收任意音源（例如树莓派）的 I2S 码流，
