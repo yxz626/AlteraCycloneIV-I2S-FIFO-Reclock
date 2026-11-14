@@ -3,7 +3,7 @@
 
 
 面向 **EP4CE6F17C8** 核心板（Cyclone IV E，配 **W9825G6JH** SDRAM 与 **EPCS4**
-配置芯片，[详见淘宝关键字](https://item.taobao.com/item.htm?id=821637015352&mi_id=0000BXvZk1LRflSx63xT5gNr_1dwjKwPkOyyFr-JYrqp6P0&spm=tbpc.mytb_itemcollect.item.goods&upStreamPrice=2000)的开源 FPGA 重时钟设计。它接收任意音源（例如树莓派）的 I2S 码流，
+配置芯片，[主板详见淘宝](https://item.taobao.com/item.htm?id=821637015352&mi_id=0000BXvZk1LRflSx63xT5gNr_1dwjKwPkOyyFr-JYrqp6P0&spm=tbpc.mytb_itemcollect.item.goods&upStreamPrice=2000)的开源 FPGA 重时钟设计。它接收任意音源（例如树莓派）的 I2S 码流，
 经 SDRAM 缓冲后，由本地低抖动音频时钟重新输出。
 
 ## 功能特性
