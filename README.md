@@ -1,97 +1,90 @@
-# Cy4_I2Sq — I2S / DoP / native-DSD FIFO Reclock
+# Cy4_I2Sq — I2S / DoP / 原生 DSD FIFO 重时钟
 
-An open FPGA reclocking design for the **EP4CE6F17C8** core board (Cyclone IV E)
-with a **W9825G6JH SDRAM** and **EPCS4** configuration device. It accepts an I2S
-stream from any source (e.g. a Raspberry Pi), buffers it in SDRAM, and re-emits it
-from a locally selected low-jitter audio clock.
+> 语言 / Language：**简体中文** ｜ [English](README.en.md)
 
-## Features
+面向 **EP4CE6F17C8** 核心板（Cyclone IV E，配 **W9825G6JH** SDRAM 与 **EPCS4**
+配置芯片）的开源 FPGA 重时钟设计。它接收任意音源（例如树莓派）的 I2S 码流，
+经 SDRAM 缓冲后，由本地低抖动音频时钟重新输出。
 
-- Automatic input format / sample-rate detection: **8 PCM rates** (44.1 kHz – 384 kHz)
-  with **16 / 20 / 24 / 32-bit** word lengths.
-- Dual crystal oscillators (**45.1584 MHz** and **49.152 MHz**) with glitch-free
-  global clock MUX selection based on the detected clock family.
-- SDRAM ring buffer with Hi-end measures: water-mark slip inside a smooth fade,
-  TPDF dither + rounding on the 20-bit path, fade-in / fade-out on every switch,
-  and full I/O timing sign-off.
-- **Native DSD** (DSD64 / 128 / 256 / 512) pass-through with bit-exact FIFO reclock.
-- **DoP (DSD over PCM) v1.1** auto-detection and decode to native DSD, reusing the
-  same SDRAM / FIFO reclock path.
-- **AD1862** 20-bit output mode toggled by the `K3` key; LED rate-tier display
-  driven from the always-on clock domain.
-- **DSDOE** (`dsd_on`, pin F2) and **F0–F3** sample-rate indicators
-  (pins C2 / A2 / A3 / A4), encoded per `f0~F3.txt`.
-- Robust stream handling: short dropouts are absorbed by the SDRAM buffer,
-  rate/format changes require consecutive valid measurements, and PCM-locked
-  state is protected against false native-DSD detection.
+## 功能特性
 
-## Verification status (at time of release)
+- 自动识别输入格式与采样率：**8 档 PCM 速率**（44.1 kHz – 384 kHz），
+  支持 **16 / 20 / 24 / 32 位**字长。
+- 双晶振（**45.1584 MHz** 与 **49.152 MHz**），依据检测到的时钟族做**无毛刺
+  全局时钟 MUX 切换**。
+- SDRAM 环形缓冲与 Hi-end 措施：水位 slip 在平滑淡变内提交、20 位通路
+  TPDF 抖动 + 舍入、每次切换淡入淡出，并完成全 IO 时序签核。
+- **原生 DSD**（DSD64 / 128 / 256 / 512）直通，位精确 FIFO 重时钟。
+- **DoP（DSD over PCM）v1.1** 自动识别并解码为原生 DSD，复用同一套
+  SDRAM / FIFO 重时钟通路。
+- **AD1862** 20 位输出模式，按 `K3` 键切换；LED 档位显示由常开时钟域驱动。
+- **DSDOE**（`dsd_on`，引脚 F2）与 **F0–F3** 采样率指示
+  （引脚 C2 / A2 / A3 / A4），编码见 `f0~F3.txt`。
+- 稳健的流处理：短断流由 SDRAM 缓冲吸收；速率/格式变化需连续有效测量确认；
+  PCM 已锁定状态受保护，避免误判为原生 DSD。
 
-| Item | Result |
+## 验证状态（发布时）
+
+| 项目 | 结果 |
 |---|---|
-| Quartus Prime 17.1 full compile | **0 errors / 0 warnings**, Flow Successful |
-| TimeQuest | worst setup **+0.709 ns**, hold **+0.132 ns**, all corners positive, 0 unconstrained paths |
-| Resources | LE 3,437 / 6,272 (55 %), memory bits 51,200 / 276,480 (19 %), pins 62 / 180 |
-| Icarus Verilog functional sim | **`ALL CHECKS PASSED (0 errors)`** |
-| DoP decode bit-exactness | 3,849 / 3,872 / 3,848 bits, all **0 errors** |
-| Pin assignment check | **62 / 62 consistent** (`python sim/check_pins.py`) |
-| Programming file | `Cy4_I2Sq.jic` (EPCS4, ASx1) |
+| Quartus Prime 17.1 全编译 | **0 errors / 0 warnings**，Flow Successful |
+| TimeQuest | 最紧 setup **+0.709 ns**、hold **+0.132 ns**，三工艺角全正，未约束路径 0 项 |
+| 资源占用 | LE 3,437 / 6,272（55%），存储位 51,200 / 276,480（19%），引脚 62 / 180 |
+| Icarus Verilog 功能仿真 | **`ALL CHECKS PASSED (0 errors)`** |
+| DoP 解码位精确性 | 3,849 / 3,872 / 3,848 bit，全部 **0 错** |
+| 引脚核对 | **62 / 62 一致**（`python sim/check_pins.py`） |
+| 编程文件 | `Cy4_I2Sq.jic`（EPCS4，ASx1） |
 
-## Repository layout
+## 仓库结构
 
-| Path | Contents |
+| 路径 | 内容 |
 |---|---|
-| `Cy4_I2S_reclock.v` | Complete Verilog RTL (top-level + all submodules) |
-| `Cy4_I2Sq.qpf` / `.qsf` / `.sdc` | Quartus project, pin assignments, timing constraints |
-| `Cy4_I2Sq.jic` | Release firmware for EPCS4 |
-| `output_files/` | SOF plus full compile / fitter / timing reports |
-| `sim/` | Icarus Verilog testbench, SDRAM / clock-MUX models, simulation log, pin checker |
-| `f0~F3.txt` | DSDOE / F0–F3 encoding definition |
-| `工程概述.md` | Full design document (Chinese) — architecture, pin map, all fixes |
-| `验证报告.md` | Requirement-to-verification report (Chinese) |
-| `工程要求说明.txt` | Original requirements (Chinese) |
-| `归档备份/` | Archive manifests with per-file SHA256 |
+| `Cy4_I2S_reclock.v` | 完整 Verilog RTL（顶层 + 全部子模块） |
+| `Cy4_I2Sq.qpf` / `.qsf` / `.sdc` | Quartus 工程、引脚分配、时序约束 |
+| `Cy4_I2Sq.jic` | 面向 EPCS4 的发布固件 |
+| `output_files/` | SOF 与全编译 / Fitter / 时序报告 |
+| `sim/` | Icarus Verilog 测试平台、SDRAM / 时钟 MUX 模型、仿真日志、引脚核对脚本 |
+| `f0~F3.txt` | DSDOE / F0–F3 编码定义 |
+| `工程概述.md` | 完整设计文档（中文）——架构、引脚映射、全部修复记录 |
+| `验证报告.md` | 需求到验证的对照报告（中文） |
+| `工程要求说明.txt` | 原始需求（中文） |
+| `归档备份/` | 归档清单，含逐文件 SHA256 |
 
-Reference datasheets and core-board schematics / PCB drawings are **not
-redistributed** in this repository. Please obtain them from Intel (Cyclone IV),
-Analog Devices (AD1862), Winbond (W9825G6JH) and your board vendor.
-The local archive ZIPs are also intentionally excluded; Git history serves as
-the version record.
+本仓库**不再分发**厂商 datasheet 与核心板原理图 / PCB 图，请自行从
+Intel（Cyclone IV）、Analog Devices（AD1862）、Winbond（W9825G6JH）
+及核心板供应商获取。本地归档 ZIP 同样有意排除，版本记录以 Git 历史为准。
 
-## Build and reproduce
+## 构建与复现
 
 ```sh
-# Full compile
+# 全编译
 quartus_sh --flow compile Cy4_I2Sq
 
-# Generate EPCS4 programming file
+# 生成 EPCS4 编程文件
 quartus_cpf -c -d EPCS4 -s EP4CE6 -m ASx1 \
     output_files/Cy4_I2Sq.sof Cy4_I2Sq.jic
 
-# Functional simulation (Icarus Verilog)
+# 功能仿真（Icarus Verilog）
 iverilog -g2005 -o sim/tb.vvp -s tb \
     sim/altclkctrl_sim.v sim/sdram_model.v \
     sim/tb_Cy4_I2S_reclock.v Cy4_I2S_reclock.v
 vvp sim/tb.vvp
 
-# Pin assignment consistency check
+# 引脚分配一致性核对
 python sim/check_pins.py
 ```
 
-Program `Cy4_I2Sq.jic` through JTAG + Serial Flash Loader into the EPCS4, then
-**power-cycle** the board so the FPGA configures itself from the serial flash.
-Burning the SOF over JTAG alone is volatile and lost on power-off.
+通过 JTAG + Serial Flash Loader 把 `Cy4_I2Sq.jic` 写入 EPCS4，然后**断电重启**，
+让 FPGA 从串行 Flash 自行配置。仅用 JTAG 烧 SOF 是易失的，掉电即失效。
 
-## Hardware notes
+## 硬件说明
 
-- Two oscillators are required: **E15 = 45.1584 MHz** (44.1 kHz family) and
-  **E16 = 49.152 MHz** (48 kHz family). E16 also clocks the always-on management
-  domain.
-- LEDs are active-high; `K3` is active-low.
-- Physical `PIN_F2` is `DSD_ON` (DSDOE), while the **signal** named F2
-  (`fsel[2]`) is on `PIN_A3` — do not confuse them when wiring.
-- The exact 62-pin assignment and clock/IO constraints are documented in
-  `工程概述.md`.
+- 需要两颗晶振：**E15 = 45.1584 MHz**（44.1 kHz 族）与 **E16 = 49.152 MHz**
+  （48 kHz 族）。E16 同时为常开管理域提供时钟。
+- LED 高电平有效；`K3` 低电平有效。
+- 物理 `PIN_F2` 是 `DSD_ON`（DSDOE），而名为 F2 的**信号**（`fsel[2]`）
+  在 `PIN_A3` —— 接线时不要混淆。
+- 完整的 62 脚分配与时钟 / IO 约束见 `工程概述.md`。
 
-For the full design rationale, debugging history and measured verification data,
-see [工程概述.md](./工程概述.md) and [验证报告.md](./验证报告.md).
+完整的设计思路、调试历史与实测数据，见 [工程概述.md](./工程概述.md) 与
+[验证报告.md](./验证报告.md)。
