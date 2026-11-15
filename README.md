@@ -1,4 +1,4 @@
-##基于Altera Cyclone IV （EP4CE6F17C8）的 I2S / DoP / 原生 DSD FIFO 重时钟
+#基于Altera Cyclone IV （EP4CE6F17C8）的 I2S / DoP / 原生 DSD FIFO 重时钟
 
 本工程利用腾讯混元4+codebuddy进行建设和调试，并已经上板编程验证成功。本人不做任何技术支持，相关疑问和bug改进请咨询相应的AI agent。
 
